@@ -14,7 +14,7 @@ class User:
     def send_notification(self, notification):
         self.notification = notification
 
-        print( f"From:{self.email}\n {notification.format()}\n Regards\n {self.name}\n\n")
+        print( f"From:{self.email}\n{notification.format()}\nRegards\n{self.name}\n\n")
 
 
 class Notification:

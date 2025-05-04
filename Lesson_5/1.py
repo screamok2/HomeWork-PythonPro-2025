@@ -35,7 +35,7 @@ class Price:
 
 
 
-phone = Price(1500, "uah")
+phone = Price(1500, "eur")
 tablet = Price(800, "usd")
 
 total: Price = phone + tablet
