@@ -280,9 +280,15 @@ def handle_user_input():
         else:
             student_management_command_handle(command)
 
+def send_mail (repo):
+    for item in repo.students:
+        print(f"Hello {repo.students["name"]}")
+
 
 # ─────────────────────────────────────────────────────────
 # ENTRYPOINT
 # ─────────────────────────────────────────────────────────
 if __name__ == "__main__":
     handle_user_input()
+
+
