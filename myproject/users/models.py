@@ -1,8 +1,10 @@
+
 from enum import StrEnum, auto
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.contrib.auth.hashers import make_password
+from django.utils import timezone
 
 class Role (StrEnum):
     ADMIN = auto()
@@ -39,7 +41,7 @@ class UserManager(BaseUserManager):
 
         extra_fields["is_staff"] = True
         extra_fields["is_superuser"] = True
-        extra_fields["role"] = Role.CUSTOMER
+        extra_fields["role"] = Role.ADMIN
 
         user = self.model(email=email, password=password, **extra_fields)
 
@@ -62,7 +64,7 @@ class User (AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
 
     role = models.CharField(max_length=50, default=Role.CUSTOMER, choices=Role.choices())
-
+    date_joined = models.DateTimeField(default=timezone.now())
     EMAIL_FIELD = "email"
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
