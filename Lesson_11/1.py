@@ -53,7 +53,7 @@ class Scheduler:
             else:
 
                 print(f"\n\t{order[0]} SENT TO SHIPPING DEPARTMENT")
-                time.sleep(1)
+
                 dd.add_order(order)
 
     def add_order(self, order: OrderRequestBody) -> None:

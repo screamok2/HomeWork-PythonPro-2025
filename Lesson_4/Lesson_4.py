@@ -1,5 +1,14 @@
 import csv
+from functools import total_ordering
 from pathlib import Path
+import threading
+import time
+import asyncio
+import functools
+
+async def async_input(prompt: str) -> str:
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, functools.partial(input, prompt))
 # ─────────────────────────────────────────────────────────
 
 
@@ -9,6 +18,8 @@ STORAGE_FILE_NAME = Path(__file__).parent / "storage/students.csv"
 # ─────────────────────────────────────────────────────────
 # INFRASTRUCTURE
 # ─────────────────────────────────────────────────────────
+background_tasks = []
+
 
 class Repository:
     """
@@ -145,6 +156,7 @@ class StudentService:
             repo.update_storage(repo.students)
 
             return student
+
 # ─────────────────────────────────────────────────────────
 # OPERATIONAL (APPLICATION) LAYER
 # ─────────────────────────────────────────────────────────
@@ -171,9 +183,9 @@ def ask_student_payload() -> dict:
     return parse(user_data)
 
 
-def student_management_command_handle(command: str):
+async def student_management_command_handle(command: str):
     students_service = StudentService()
-    repo = Repository()
+    global repo
     if command == "show":
         students_service.show_students()
 
@@ -254,12 +266,16 @@ def student_management_command_handle(command: str):
 
         updated_marks = students_service.add_marks(idd=idd, new_marks=new_marks)
         print(f"Student {updated_marks["name"]} marks added")
+
+    elif command == "mail":
+        task = asyncio.create_task(send_mail())
+        background_tasks.append(task)
 # ─────────────────────────────────────────────────────────
 # PRESENTATION LAYER
 # ─────────────────────────────────────────────────────────
-def handle_user_input():
+async def handle_user_input():
     OPERATIONAL_COMMANDS = ("quit", "help")
-    STUDENT_MANAGEMENT_COMMANDS = ("show", "add", "search", "delete", "update", "add mark")
+    STUDENT_MANAGEMENT_COMMANDS = ("show", "add", "search", "delete", "update", "add mark","mail")
     AVAILABLE_COMMANDS = (*OPERATIONAL_COMMANDS, *STUDENT_MANAGEMENT_COMMANDS)
 
     HELP_MESSAGE = (
@@ -270,7 +286,7 @@ def handle_user_input():
     print(HELP_MESSAGE)
 
     while True:
-        command = input("\n Select command: ")
+        command = await async_input("\nSelect command: ")
 
         if command == "quit":
             print("\nThanks for using the Journal application")
@@ -278,17 +294,45 @@ def handle_user_input():
         elif command == "help":
             print(HELP_MESSAGE)
         else:
-            student_management_command_handle(command)
+            await student_management_command_handle(command)
 
-def send_mail (repo):
-    for item in repo.students:
-        print(f"Hello {repo.students["name"]}")
+async def send_mail ():
+    global repo
+    more_students = repo.students * 10000 #simulation of 100000 students
+    start_time = time.perf_counter()
+    total_number_of_students = len(more_students)
+    ss = []
+    for i in more_students:
+        ff = [int(i) for i in i["marks"].split(",")]
+        ss.extend(ff)
+    total_average_mark = round(sum(ss)/ len(ss), 2 )
+    for item in more_students:
+        average_mark = item["marks"]
+        average_mark =[int(i) for i in average_mark.split(",")]
+
+
+        average_mark1 =  sum(average_mark) / len(average_mark)
+        print( f"Hello {item['name']}, your average mark is: {round(average_mark1 , 2)}\ntotal number of students: {total_number_of_students}\nThe total average mark: {total_average_mark}\n\n" )
+
+    end_time = time.perf_counter()
+    time_for_operation = end_time - start_time
+    print(f"Time for sending mails: {time_for_operation}")
+
+
+async def main():
+    await handle_user_input()
+    if background_tasks:
+        print("\nWaiting for background tasks to complete...")
+        await asyncio.gather(*background_tasks)
 
 
 # ─────────────────────────────────────────────────────────
 # ENTRYPOINT
 # ─────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    handle_user_input()
+    asyncio.run(main())
+
+
+
 
 
