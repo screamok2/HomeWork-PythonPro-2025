@@ -11,12 +11,16 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
-from django.conf.global_settings import AUTH_USER_MODEL
+from django.conf.global_settings import AUTH_USER_MODEL, AUTHENTICATION_BACKENDS
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "fallback-secret")
+DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -41,7 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     "users",
-    "food"
+    "food",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [
@@ -79,15 +84,17 @@ WSGI_APPLICATION = 'myproject.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("POSTGRES_DB", "myproject"),
+        "USER": os.getenv("POSTGRES_USER", "postgres"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "postgres"),
+        "HOST": os.getenv("POSTGRES_HOST", "db"),
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
     }
 }
 
 
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -120,7 +127,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+
+STATIC_ROOT = BASE_DIR /"staticfile"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -138,13 +147,18 @@ REST_FRAMEWORK = {
 
     'DEFAULT_FILTERS_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = "noreply@example.com"
-SITE_URL = "http://127.0.0.1:8000"
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.getenv("EMAIL_HOST", "mailpit")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "1025"))
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@myproject.local")
 
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "activation-cache",
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://{os.getenv('REDIS_HOST', 'redis')}:{os.getenv('REDIS_PORT', '6379')}/1",
     }
 }
+#AUTHENTICATION_BACKENDS = [
+ #   'django.contrib.auth.backends.ModelBackend',
+#]
+SITE_URL = os.getenv("SITE_URL", "http://localhost:8000")

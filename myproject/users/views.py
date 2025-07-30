@@ -31,7 +31,7 @@ class UserRegisterView(View):
             user.send_activation_code()
             return redirect('login')
         else:
-            return render(request, 'register.html', {'errors': serializer.errors})
+            return render(request, 'registration.html', {'errors': serializer.errors})
 
 def activate_user(request, code):
     email = cache.get(code)

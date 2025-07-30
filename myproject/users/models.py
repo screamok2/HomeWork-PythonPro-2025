@@ -25,32 +25,36 @@ class Role (StrEnum):
         return results
 
 class UserManager(BaseUserManager):
-    def create_user(self, email , password, **extra_fields):
+    use_in_migration = True
+    def create_user(self, email , password=None, **extra_fields):
         email = self.normalize_email(email)
-        password = make_password(password)
 
-        extra_fields["is_staff"] = False
-        extra_fields["is_superuser"] = False
-        extra_fields["role"] = Role.CUSTOMER
 
-        user = self.model(email=email, password=password, **extra_fields)
+        #extra_fields["is_staff"] = False
+        #extra_fields["is_superuser"] = False
+        #extra_fields["role"] = Role.CUSTOMER
+
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
         user.save()
 
         return user
 
-    def create_superuser(self, email , password, **extra_fields):
-        email = self.normalize_email(email)
-        password = make_password(password)
+    def create_superuser(self, email , password=None, **extra_fields):
+        #email = self.normalize_email(email)
+        #password = make_password(password)
 
         extra_fields["is_staff"] = True
+        extra_fields["is_active"] = True
         extra_fields["is_superuser"] = True
         extra_fields["role"] = Role.ADMIN
+        return self.create_user(email, password,**extra_fields)
 
-        user = self.model(email=email, password=password, **extra_fields)
+        #user = self.model(email=email, password=password, **extra_fields)
 
-        user.save()
+        #user.save()
 
-        return user
+        #return user
 
 
 class User (AbstractBaseUser, PermissionsMixin):
@@ -70,7 +74,7 @@ class User (AbstractBaseUser, PermissionsMixin):
 
 
     role = models.CharField(max_length=50, default=Role.CUSTOMER, choices=Role.choices())
-    date_joined = models.DateTimeField(default=timezone.now())
+    date_joined = models.DateTimeField(default=timezone.now)
     EMAIL_FIELD = "email"
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
