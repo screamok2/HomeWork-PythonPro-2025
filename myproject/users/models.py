@@ -1,10 +1,13 @@
-
+import uuid
+from django.core.cache import cache
 from enum import StrEnum, auto
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
+from django.conf import settings
+from django.core.mail import send_mail
 
 class Role (StrEnum):
     ADMIN = auto()
@@ -61,7 +64,10 @@ class User (AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=50, null=False)
 
     is_staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
+
+    activation_code = models.UUIDField(default=uuid.uuid4,  null=True, blank=True)
+
 
     role = models.CharField(max_length=50, default=Role.CUSTOMER, choices=Role.choices())
     date_joined = models.DateTimeField(default=timezone.now())
@@ -69,3 +75,20 @@ class User (AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
+    def send_activation_code(self):
+        code = str(uuid.uuid4())
+
+        cache.set(code, self.email, timeout=600)
+
+
+        activation_link = f"{settings.SITE_URL}/activate/{code}/"
+        subject = "Activate your account"
+        message = f"Hi {self.first_name}, please click the link to activate your account: {activation_link}"
+
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [self.email],
+            fail_silently=False,
+        )

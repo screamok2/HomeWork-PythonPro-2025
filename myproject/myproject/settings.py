@@ -138,3 +138,13 @@ REST_FRAMEWORK = {
 
     'DEFAULT_FILTERS_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = "noreply@example.com"
+SITE_URL = "http://127.0.0.1:8000"
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "activation-cache",
+    }
+}

@@ -6,9 +6,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import UserCreateSerializer
 from django.views.decorators.csrf import csrf_exempt
-
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponse, HttpResponseBadRequest
+from .models import User
+from django.core.cache import cache
 
 class UserRegisterView(View):
+
+
     def get(self, request):
         return render(request, 'registration.html')
 
@@ -22,7 +27,25 @@ class UserRegisterView(View):
         }
         serializer = UserCreateSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            user = serializer.save(is_active=False)
+            user.send_activation_code()
             return redirect('login')
         else:
             return render(request, 'register.html', {'errors': serializer.errors})
+
+def activate_user(request, code):
+    email = cache.get(code)
+    if not email:
+        return HttpResponseBadRequest("Link is expired")
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return HttpResponse(" User not found")
+
+    if not user.is_active:
+        user.is_active = True
+        user.save()
+        cache.delete(code)
+        return HttpResponse("Your account has been activated!")
+    return HttpResponse("Account is already active")
