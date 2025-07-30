@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from kombu import Queue
 
 from django.conf.global_settings import AUTH_USER_MODEL, AUTHENTICATION_BACKENDS
 
@@ -43,10 +44,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_results',
+    'django_celery_beat',
 
-    "users",
-    "food",
-    "rest_framework",
+    'users',
+    'food',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -158,7 +161,17 @@ CACHES = {
         "LOCATION": f"redis://{os.getenv('REDIS_HOST', 'redis')}:{os.getenv('REDIS_PORT', '6379')}/1",
     }
 }
-#AUTHENTICATION_BACKENDS = [
- #   'django.contrib.auth.backends.ModelBackend',
-#]
+
 SITE_URL = os.getenv("SITE_URL", "http://localhost:8000")
+#SITE_URL = "http://localhost:8000"
+
+
+CELERY_BROKER_URL = "amqp://guest:guest@rabbitmq:5672//"
+CELERY_RESULT_BACKEND = "django-db"
+
+CELERY_TASK_QUEUES = (
+    Queue("high_priority"),
+    Queue("low_priority"),
+)
+
+CELERY_TASK_DEFAULT_QUEUE = "low_priority"

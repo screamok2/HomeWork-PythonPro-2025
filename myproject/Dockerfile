@@ -1,7 +1,11 @@
 FROM python:3.13-slim
 
-# Устанавливаем зависимости
-RUN apt-get update && apt-get install -y build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
+# Устанавливаем все системные зависимости сразу
+RUN apt-get update && apt-get install -y \
+    netcat-openbsd \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Создаём рабочую папку
 WORKDIR /myproject
@@ -9,6 +13,8 @@ WORKDIR /myproject
 # Устанавливаем зависимости проекта
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+COPY wait-for-rabbitmq.sh .
+RUN chmod +x wait-for-rabbitmq.sh
 
 # Копируем весь проект
 COPY . .

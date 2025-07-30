@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseBadRequest
 from .models import User
 from django.core.cache import cache
+from users.tasks import send_activation_email
 
 class UserRegisterView(View):
 
@@ -29,9 +30,12 @@ class UserRegisterView(View):
         if serializer.is_valid():
             user = serializer.save(is_active=False)
             user.send_activation_code()
+            #activation_link = f"{settings.SITE_URL}/activate/{user.activation_code}/"
+            #send_activation_email.delay(user.email, user.first_name, activation_link)
             return redirect('login')
         else:
             return render(request, 'registration.html', {'errors': serializer.errors})
+
 
 def activate_user(request, code):
     email = cache.get(code)

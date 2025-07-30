@@ -8,6 +8,7 @@ from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from django.conf import settings
 from django.core.mail import send_mail
+from .tasks import send_activation_email
 
 class Role (StrEnum):
     ADMIN = auto()
@@ -80,19 +81,24 @@ class User (AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     def send_activation_code(self):
+     #   code = str(uuid.uuid4())
+     #   cache.set(code, self.email, timeout=600)
+
+
+      #  activation_link = f"{settings.SITE_URL}/activate/{code}/"
+      #  subject = "Activate your account"
+      #  message = f"Hi {self.first_name}, please click the link to activate your account: {activation_link}"
+
+     #  send_mail(
+      #      subject,
+      #      message,
+     #       settings.DEFAULT_FROM_EMAIL,
+      #      [self.email],
+      #      fail_silently=False,
+      #  )
         code = str(uuid.uuid4())
-
+        self.activation_code = code
+        self.save(update_fields=["activation_code"])
         cache.set(code, self.email, timeout=600)
-
-
         activation_link = f"{settings.SITE_URL}/activate/{code}/"
-        subject = "Activate your account"
-        message = f"Hi {self.first_name}, please click the link to activate your account: {activation_link}"
-
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [self.email],
-            fail_silently=False,
-        )
+        send_activation_email(self.email, self.first_name, activation_link)
