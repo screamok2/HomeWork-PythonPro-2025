@@ -9,7 +9,16 @@ from rest_framework.response import Response
 from rest_framework import status
 from users.models import Role
 from rest_framework.pagination import LimitOffsetPagination
-
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from django.utils import timezone
+from .tasks import process_order_task
+from django.http import JsonResponse
+from rest_framework.views import APIView
+from rest_framework import status
+from django.core.cache import cache
+import logging
+from .utils.cache_keys import restaurant_status_key
 
 
 class DishesListView(generics.ListAPIView):
@@ -123,3 +132,44 @@ def import_dishes(request):
     print(f"{total_created} dishes added and {total_updated} dishes updated")
 
     return redirect(request.META.get("HTTP_REFERER","/"))
+
+# food/views.py
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Order
+
+@api_view(["POST"])
+def uber_webhook(request):
+    order_id = request.query_params.get("order_id")
+    if not order_id:
+        return Response({"error": "order_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Проверка, что JSON пришёл
+    event = request.data.get("event")  # <- вот здесь проверяется {"event": "delivered"}
+    if not event:
+        return Response({"error": "Missing 'event' in JSON"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        order = Order.objects.get(id=order_id)
+    except Order.DoesNotExist:
+        return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if order.status == "delivered":
+        return JsonResponse({"ok": True, "msg": "Order already delivered"})
+
+    if event in ["not_started", "cooking", "cooked", "delivery", "delivered"]:
+        order.status = event
+        order.save(update_fields=["status"])
+        return JsonResponse({"ok": True})
+    return Response({"ok": True})
+
+def create_order(request):
+
+    order = Order.objects.create()
+
+    process_order_task.delay(order.id)
+
+    return JsonResponse({"status": "ok", "order_id": order.id})
+

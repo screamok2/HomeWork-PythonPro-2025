@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure-8&n697@7nh6n7ip%8#1@zk)9qr=(wsi-vh9k5x=@%f^4r85v&&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "web"]
 
 
 # Application definition
@@ -163,11 +163,11 @@ CACHES = {
 }
 
 SITE_URL = os.getenv("SITE_URL", "http://localhost:8000")
-#SITE_URL = "http://localhost:8000"
 
 
-CELERY_BROKER_URL = "amqp://guest:guest@rabbitmq:5672//"
-CELERY_RESULT_BACKEND = "django-db"
+CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq:5672//'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_TASK_ALWAYS_EAGER = False
 
 CELERY_TASK_QUEUES = (
     Queue("high_priority"),
